@@ -1,6 +1,6 @@
 # minidlna-docker
 
-Credit to Jacob Alberty and the [unifi-docker](https://github.com/jacobalberty/unifi-docker) project.
+Credit to Jacob Alberty and the [unifi-docker](https://github.com/jacobalberty/unifi-docker) project for providing an excellent example of how to construct a Dockerfile and associated shell scripts.
 
 ## Description
 
@@ -19,11 +19,25 @@ friendly_name=Media Server
 notify_interval=10  # seconds
 ```
 
+## Docker Configuration
+The ReadyMedia server advertises the service with muticast [SSDP](https://en.wikipedia.org/wiki/Simple_Service_Discovery_Protocol) packets. The default `bridge` network doesn't pass multicast packets so we will create an [`ipvlan`](https://docs.docker.com/network/ipvlan/) network.
+
+```
+# docker create network -d ipvlan -o parent eth0 --subnet 192.168.0.0/16 --gateway 192.168.0.1 --ip-range 192.168.10.0/24 ipvlan_net
+```
+
+A few things to note:
+
+* Replace `eth0` with the name of your LAN network adapter
+* Replace IP addresses with values appropriate for your network.
+
 Build and run the container:
 ```
-# ./docker-build.sh
-# docker-run --rm -p 8200:8200/tcp -p 1900:1900/udp -v /var/lib/minidlna:/var/lib/minidlna -v /srv:/srv --name minidlna iboisvert/minidlna:1
+# ./docker-build.sh > build.log
+# docker-run -it --rm -v /var/lib/minidlna:/var/lib/minidlna -v /srv:/srv --net ipvlan_net --name minidlna iboisvert/minidlna-docker:1
 ```
+
+Note that it isn't necessary to publish ports exposed by the container.
 
 ## Environment Variables
 
